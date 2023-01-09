@@ -1,0 +1,6 @@
+ipykernel
+numpy
+scikit-multiflow
+fitter
+
+git+https://github.com/moretoknow/driftwatch
