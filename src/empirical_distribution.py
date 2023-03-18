@@ -1,21 +1,19 @@
 import random
 from bisect import bisect_left
 from scipy import stats
-
+from scipy.stats import norm
+import numpy as np
 
 class EmpiricalDistribution():
     def __init__(self, data):
         self.data = sorted(data)
 
     def cdf(self, x):
-        return bisect_left(self.data, x)/len(self.data)
-
+        if(type(x) != list and type(x) != np.ndarray):
+            return bisect_left(self.data, x)/len(self.data)
+        
+        return np.array([bisect_left(self.data, v)/len(self.data) for v in x])
+        
     def rvs(self, size):
         return random.sample(self.data, size)
-
-
-
-dist = EmpiricalDistribution([10,20,9,28,5,2,8,37,34,30])
-cdf = dist.cdf(38)
-print(cdf)
-print(dist.rvs(1))
+    
