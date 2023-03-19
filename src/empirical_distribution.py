@@ -15,5 +15,4 @@ class EmpiricalDistribution():
         return np.array([bisect_left(self.data, v)/len(self.data) for v in x])
         
     def rvs(self, size):
-        return random.sample(self.data, size)
-    
+        return np.around(random.sample(self.data, size), 8)
