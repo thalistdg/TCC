@@ -1,6 +1,44 @@
 import pandas as pd
 import scipy.stats
 from fitter import Fitter
+import numpy as np
+import scipy.stats as st
+
+from empirical_distribution import EmpiricalDistribution
+from skmultiflow.drift_detection import PageHinkley
+from driftwatch import GreedyKS, IksReservoir, ReservoirSampling, LallDDSketch
+
+import time
+import dtaidistance.dtw
+import collections as cl
+
+import tqdm
+import multiprocessing as mproc
+
+approx_methods = ['Page Hinkley','GreedyKS', 'Reservoir Sampling', 'IKS + RS']#, 'Lall + DDSketch']
+
+def ph_builder(ref_distrib, num_bins):
+    return PageHinkley(min_instances=0)
+
+def rs_builder(ref_distrib, num_bins):
+    return ReservoirSampling(num_bins, ref_distrib)
+
+def gks_builder(ref_distrib, num_bins):
+    return GreedyKS(ref_distrib, num_bins, exact_prob=True)
+
+# def dds_builder(ref_distrib, num_bins, stream):
+#     return LallDDSketch(compute_ddsketch_error(stream, num_bins), ref_distrib)
+
+def iks_builder(ref_distrib, num_bins):
+    return IksReservoir(num_bins, ref_distrib)
+
+method_factory = {
+    'Page Hinkley': ph_builder,
+    'Reservoir Sampling': rs_builder,
+    'GreedyKS': gks_builder,
+    # 'Lall + DDSketch': dds_builder,
+    'IKS + RS': iks_builder,
+}
 
 def load_data(file_column, days_range, months_range, hours_range):
     stream = []
@@ -36,3 +74,119 @@ def fit_data(data, type, test=False):
 
 def get_dist_obj(dist, param):
     return getattr(scipy.stats, dist)(**param)
+
+def run(args):
+    num_bins, tweets_per_file, dist_type, test = args
+    instances_methods = {}
+    index = 0
+    methods_drifts = {
+        "Page Hinkley": [],
+        "GreedyKS" : [],
+        "Reservoir Sampling" : [],
+        "IKS + RS": [],
+        "mini-batch": []
+    }
+    methods_times = {
+        "Page Hinkley": 0,
+        "GreedyKS" : 0,
+        "Reservoir Sampling" : 0,
+        "IKS + RS" : 0
+    }
+
+    full_batch = []
+    dist = None
+    
+    for tweets_hour in tqdm.tqdm(tweets_per_file):
+        
+        full_batch = np.concatenate((full_batch, tweets_hour))
+
+        if dist == None or st.ks_1samp(full_batch, dist.cdf).pvalue < 0.01:
+            if len(tweets_hour) > 3:
+                if dist_type == 'fit':
+                    best_fitted = fit_data(tweets_hour, 'get_best', test=test)
+                    dist = get_dist_obj(list(best_fitted.keys())[0], list(best_fitted.values())[0])
+                elif dist_type == 'empirical':
+                    dist = EmpiricalDistribution(tweets_hour)
+                else:
+                    print('Unknow distribution type!')
+                    return -1
+                full_batch = tweets_hour
+                methods_drifts['mini-batch'].append(index)
+            else:
+                dist = None
+        
+        for element in tweets_hour:
+            index += 1
+            for m in approx_methods:
+                if m in instances_methods:
+                    start = time.time()
+                    instances_methods[m].add_element(element)
+                    if instances_methods[m].detected_change():
+                        methods_drifts[m].append(index)
+                        del instances_methods[m]
+                    
+                    methods_times[m] = methods_times[m] + time.time() - start
+        
+        if len(tweets_hour) > 3:
+            for m in approx_methods:
+                if m not in instances_methods:
+                    instances_methods[m] = method_factory[m](dist, num_bins)
+                    for element in tweets_hour:
+                        instances_methods[m].add_element(element)
+
+    print('Number of tweets processed: ', index)
+    return {k:dtaidistance.dtw.distance(methods_drifts.get(k, []), methods_drifts['mini-batch']) for k in approx_methods if k != 'mini-batch'}, methods_times
+
+def eval_call_center(args):
+    ts_smp, num_bins = args
+    
+    instances_methods = {}
+    resp = cl.defaultdict(list)
+    
+    minibatch_expon = None
+    full_batch = []
+    time = 0
+    
+    for i in ts_smp.groupby([ts_smp.dt.year, ts_smp.dt.month, ts_smp.dt.day, ts_smp.dt.hour]):
+        latest_hour_batch = (i[1][1:].values - i[1][:-1].values).astype(float)/10**9
+        latest_hour_var = len(set(latest_hour_batch))
+        latest_hour_expon = None
+        
+        full_batch = np.concatenate((full_batch, latest_hour_batch))
+
+        if minibatch_expon == None or st.ks_1samp(full_batch, minibatch_expon.cdf).pvalue < 0.01:
+            if latest_hour_var > 3:
+                latest_hour_expon = minibatch_expon = st.expon(*st.expon.fit(latest_hour_batch))
+                full_batch = latest_hour_batch
+                resp['mini-batch'].append(time)
+            else:
+                minibatch_expon = None
+
+        for element in latest_hour_batch:
+            time += 1
+            for m in approx_methods:
+                if m in instances_methods:
+                    instances_methods[m].add_element(element)
+
+                    if instances_methods[m].detected_change():
+                        resp[m].append(time)
+                        del instances_methods[m]
+
+        if latest_hour_var > 3:
+            for m in approx_methods:
+                if m not in instances_methods:
+                    latest_hour_expon = latest_hour_expon or st.expon(*st.expon.fit(latest_hour_batch))
+                    
+                    instances_methods[m] = method_factory[m](latest_hour_expon, num_bins, latest_hour_batch)
+
+                    for element in latest_hour_batch:
+                        instances_methods[m].add_element(element)
+
+    return {k:dtaidistance.dtw.distance(resp.get(k, []), resp['mini-batch']) for k in approx_methods if k != 'mini-batch'}
+
+def get_results_call_center(num_bins, samples, nproc=None):
+    args_gen = ((sample, num_bins) for sample in samples)
+    
+    results = mproc.Pool(processes=nproc).imap(eval_call_center, args_gen)
+    results = tqdm.tqdm(results, total=len(samples))
+    return pd.DataFrame(results)
