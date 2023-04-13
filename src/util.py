@@ -135,7 +135,8 @@ def run(args):
                         instances_methods[m].add_element(element)
 
     print('Number of tweets processed: ', index)
-    return {k:dtaidistance.dtw.distance(methods_drifts.get(k, []), methods_drifts['mini-batch']) for k in approx_methods if k != 'mini-batch'}, methods_times
+    return methods_drifts, methods_times
+    # return {k:dtaidistance.dtw.distance(methods_drifts.get(k, []), methods_drifts['mini-batch']) for k in approx_methods if k != 'mini-batch'}, methods_times
 
 def eval_call_center(args):
     ts_smp, num_bins = args
