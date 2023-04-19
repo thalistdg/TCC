@@ -62,9 +62,11 @@ def load_data(file_column, days_range, months_range, hours_range):
 
 
 def fit_data(data, type, test=False):
-    f = Fitter(data)
     if test:
-        f.distributions = f.distributions[:2]
+        f = Fitter(data, distributions=['gumbel_r', 'laplace', 'logistic', 'norm', 'uniform'])
+        # f.distributions = f.distributions[:2]
+    else:
+        f = Fitter(data)
     f.fit()
 
     if type == 'summary':
