@@ -2,6 +2,7 @@ import pandas as pd
 import scipy.stats
 from fitter import Fitter
 import numpy as np
+import random
 import scipy.stats as st
 
 from empirical_distribution import EmpiricalDistribution
@@ -40,7 +41,7 @@ method_factory = {
     'IKS + RS': iks_builder,
 }
 
-def load_data(file_column, days_range, months_range, hours_range):
+def load_data(file_column, days_range, months_range, hours_range, sampling_p=1.0):
     stream = []
     days = range(*days_range)
     months = range(*months_range)
@@ -49,20 +50,28 @@ def load_data(file_column, days_range, months_range, hours_range):
         path = '../COVID19_Tweets_Dataset_2020/Summary_Sentiment/2020_' + month_2_digits + '/'
 
         for day in days:
+            if month == 1 and day < 22:
+                continue
             if month == 2 and day > 29:
                 continue
-            if month == 1 and day < 22:
+            if day > 31:
                 continue
 
             for hour in range(*hours_range):
-                file_name = path + f'2020_{month_2_digits}_' + '{day:02}'.format(day=day) + '_{hour:02}'.format(hour=hour) + '_Summary_Sentiment.csv'
-                stream.append(pd.read_csv(file_name)[file_column])
+                file_name = path + f'2020_{month_2_digits}_' + '{day:02}'.format(day=day) \
+                            + '_{hour:02}'.format(hour=hour) + '_Summary_Sentiment.csv'
+                df = pd.read_csv(file_name,
+                                 names=['Tweet_ID','Sentiment_Label','Logits_Neutral','Logits_Positive','Logits_Negative'],
+                                 header=0,
+                                 skiprows=(lambda x:random.random() > sampling_p)
+                                )
+                stream.append(df[file_column])
 
     return (pd.concat(stream, ignore_index=True), stream) if len(stream) > 0 else (stream, stream)
 
 
-def fit_data(data, type, test=False):
-    if test:
+def fit_data(data, type, predefined_dists=False):
+    if predefined_dists:
         f = Fitter(data, distributions=['gumbel_r', 'laplace', 'logistic', 'norm', 'uniform'])
         # f.distributions = f.distributions[:2]
     else:
@@ -78,7 +87,7 @@ def get_dist_obj(dist, param):
     return getattr(scipy.stats, dist)(**param)
 
 def run(args):
-    num_bins, tweets_per_file, dist_type, test = args
+    num_bins, tweets_per_file, dist_type, predefined_dists = args
     instances_methods = {}
     index = 0
     methods_drifts = {
@@ -105,7 +114,7 @@ def run(args):
         if dist == None or st.ks_1samp(full_batch, dist.cdf).pvalue < 0.01:
             if len(tweets_hour) > 3:
                 if dist_type == 'fit':
-                    best_fitted = fit_data(tweets_hour, 'get_best', test=test)
+                    best_fitted = fit_data(tweets_hour, 'get_best', predefined_dists=predefined_dists)
                     dist = get_dist_obj(list(best_fitted.keys())[0], list(best_fitted.values())[0])
                 elif dist_type == 'empirical':
                     dist = EmpiricalDistribution(tweets_hour)
