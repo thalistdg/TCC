@@ -47,7 +47,7 @@ def load_data(file_column, days_range, months_range, hours_range, sampling_p=1.0
     months = range(*months_range)
     for month in months:
         month_2_digits = '{month:02}'.format(month=month)
-        path = '../COVID19_Tweets_Dataset_2020/Summary_Sentiment/2020_' + month_2_digits + '/'
+        path = '/media/thalis/arquivos linux/TCC/COVID19_Tweets_Dataset_2020/Summary_Sentiment/2020_' + month_2_digits + '/'
 
         for day in days:
             if month == 1 and day < 22:
