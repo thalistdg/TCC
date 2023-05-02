@@ -42,6 +42,8 @@ method_factory = {
 }
 
 def load_data(file_column, days_range, months_range, hours_range, sampling_p=1.0):
+    months_with_30 = [4,6,9,11]
+
     stream = []
     days = range(*days_range)
     months = range(*months_range)
@@ -55,6 +57,8 @@ def load_data(file_column, days_range, months_range, hours_range, sampling_p=1.0
             if month == 2 and day > 29:
                 continue
             if day > 31:
+                continue
+            if month in months_with_30 and day > 30:
                 continue
 
             for hour in range(*hours_range):
