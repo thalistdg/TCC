@@ -15,6 +15,7 @@ import collections as cl
 
 import tqdm
 import multiprocessing as mproc
+import config
 
 approx_methods = ['Page Hinkley','GreedyKS', 'Reservoir Sampling', 'IKS + RS']#, 'Lall + DDSketch']
 
@@ -41,7 +42,7 @@ method_factory = {
     'IKS + RS': iks_builder,
 }
 
-def load_data(file_column, days_range, months_range, hours_range, sampling_p=1.0):
+def load_data(days_range, months_range, hours_range):
     months_with_30 = [4,6,9,11]
 
     stream = []
@@ -63,13 +64,9 @@ def load_data(file_column, days_range, months_range, hours_range, sampling_p=1.0
 
             for hour in range(*hours_range):
                 file_name = path + f'2020_{month_2_digits}_' + '{day:02}'.format(day=day) \
-                            + '_{hour:02}'.format(hour=hour) + '_Summary_Sentiment.csv'
-                df = pd.read_csv(file_name,
-                                 names=['Tweet_ID','Sentiment_Label','Logits_Neutral','Logits_Positive','Logits_Negative'],
-                                 header=0,
-                                 skiprows=(lambda x:random.random() > sampling_p)
-                                )
-                stream.append(df[file_column])
+                            + '_{hour:02}'.format(hour=hour) + '_Summary_Sentiment.pkl'
+                df = pd.read_pickle(file_name)
+                stream.append(df[config.file_column])
 
     return (pd.concat(stream, ignore_index=True), stream) if len(stream) > 0 else (stream, stream)
 
