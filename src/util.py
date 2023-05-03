@@ -68,7 +68,7 @@ def load_data(days_range, months_range, hours_range):
                 df = pd.read_pickle(file_name)
                 stream.append(df[config.file_column])
 
-    return (pd.concat(stream, ignore_index=True), stream) if len(stream) > 0 else (stream, stream)
+    return stream
 
 
 def fit_data(data, type, predefined_dists=False):
