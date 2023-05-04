@@ -4,12 +4,12 @@ import pandas as pd
 import random
 
 # input month number to download
-month = 1
+month = 4
 month = '{month:02}'.format(month=month)
 
 # write days for this month.
-first_day_in_month = 22
-last_day_in_month = 31
+first_day_in_month = 1
+last_day_in_month = 30
 
 sampling_p = 0.1
 
