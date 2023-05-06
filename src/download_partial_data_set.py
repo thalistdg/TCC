@@ -5,7 +5,7 @@ import pandas as pd
 import random
 
 # input month number to download
-month = 9
+month = 8
 month = '{month:02}'.format(month=month)
 
 # write days for this month.
@@ -16,7 +16,7 @@ sampling_p = 0.1
 
 for day in tqdm.tqdm(range(first_day_in_month, last_day_in_month+1)):
     day_2_d = '{day:02}'.format(day=day)
-    for hour in range(1,24):
+    for hour in range(0,1):
         hour_2_d = '{hour_2:02}'.format(hour_2=hour)
         url = 'https://raw.githubusercontent.com/lopezbec/COVID19_Tweets_Dataset_2020/' \
             + f'master/Summary_Sentiment/2020_{month}/2020_{month}_{day_2_d}_{hour_2_d}_Summary_Sentiment.csv'
@@ -32,6 +32,9 @@ for day in tqdm.tqdm(range(first_day_in_month, last_day_in_month+1)):
                             )
         except HTTPError as ex:
             if ex.code == 404:
+                csv_file = open('../download_logs.txt', 'a')
+                csv_file.write('Error 404 in url: ' + url + '\n')
+                csv_file.close()
                 continue
             else:
                 raise ex

@@ -42,31 +42,30 @@ method_factory = {
     'IKS + RS': iks_builder,
 }
 
-def load_data(days_range, months_range, hours_range):
+def load_data(days_range, month, hours_range):
     months_with_30 = [4,6,9,11]
 
     stream = []
     days = range(*days_range)
-    months = range(*months_range)
-    for month in months:
-        month_2_digits = '{month:02}'.format(month=month)
-        path = '/media/thalis/arquivos linux/TCC/COVID19_Tweets_Dataset_2020/Summary_Sentiment/2020_' + month_2_digits + '/'
+    
+    month_2_digits = '{month:02}'.format(month=month)
+    path = '/media/thalis/arquivos linux/TCC/COVID19_Tweets_Dataset_2020/Summary_Sentiment/2020_' + month_2_digits + '/'
 
-        for day in days:
-            if month == 1 and day < 22:
-                continue
-            if month == 2 and day > 29:
-                continue
-            if day > 31:
-                continue
-            if month in months_with_30 and day > 30:
-                continue
+    for day in days:
+        if month == 1 and day < 22:
+            continue
+        if month == 2 and day > 29:
+            continue
+        if day > 31:
+            continue
+        if month in months_with_30 and day > 30:
+            continue
 
-            for hour in range(*hours_range):
-                file_name = path + f'2020_{month_2_digits}_' + '{day:02}'.format(day=day) \
-                            + '_{hour:02}'.format(hour=hour) + '_Summary_Sentiment.pkl'
-                df = pd.read_pickle(file_name)
-                stream.append(df[config.file_column])
+        for hour in range(*hours_range):
+            file_name = path + f'2020_{month_2_digits}_' + '{day:02}'.format(day=day) \
+                        + '_{hour:02}'.format(hour=hour) + '_Summary_Sentiment.pkl'
+            df = pd.read_pickle(file_name)
+            stream.append(df[config.file_column])
 
     return stream
 
@@ -109,6 +108,8 @@ def run(args):
     dist = None
     
     for tweets_hour in tqdm.tqdm(tweets_per_file):
+        if len(tweets_hour) == 0:
+            continue
         
         full_batch = np.concatenate((full_batch, tweets_hour))
 
