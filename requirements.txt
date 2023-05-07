@@ -5,4 +5,5 @@ ipykernel
 scikit-multiflow
 fitter
 dtaidistance==2.3.6
+requests
 git+https://github.com/moretoknow/driftwatch
