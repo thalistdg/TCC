@@ -64,8 +64,14 @@ def load_data(days_range, month, hours_range):
         for hour in range(*hours_range):
             file_name = path + f'2020_{month_2_digits}_' + '{day:02}'.format(day=day) \
                         + '_{hour:02}'.format(hour=hour) + '_Summary_Sentiment.pkl'
-            df = pd.read_pickle(file_name)
-            stream.append(df[config.file_column])
+            try:
+                df = pd.read_pickle(file_name)
+                stream.append(df[config.file_column])
+            except FileNotFoundError as ex:
+                log_file = open('../logs.txt', 'a')
+                log_file.write('File not found!: ' + file_name + '\n')
+                log_file.close()
+            
 
     return stream
 

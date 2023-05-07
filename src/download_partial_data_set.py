@@ -32,9 +32,9 @@ for day in tqdm.tqdm(range(first_day_in_month, last_day_in_month+1)):
                             )
         except HTTPError as ex:
             if ex.code == 404:
-                csv_file = open('../download_logs.txt', 'a')
-                csv_file.write('Error 404 in url: ' + url + '\n')
-                csv_file.close()
+                file = open('../logs.txt', 'a')
+                file.write('Error 404 in url: ' + url + '\n')
+                file.close()
                 continue
             else:
                 raise ex
@@ -43,6 +43,3 @@ for day in tqdm.tqdm(range(first_day_in_month, last_day_in_month+1)):
         file_name = f'2020_{month}_{day_2_d}_{hour_2_d}_Summary_Sentiment.pkl'
         
         pd.to_pickle(req, path + file_name)
-        # csv_file = open(path + file_name, 'wb')
-        # csv_file.write(req)
-        # csv_file.close()

@@ -1,0 +1,4 @@
+File not found!: /media/thalis/arquivos linux/TCC/COVID19_Tweets_Dataset_2020/Summary_Sentiment/2020_08/2020_08_08_07_Summary_Sentiment.pkl
+File not found!: /media/thalis/arquivos linux/TCC/COVID19_Tweets_Dataset_2020/Summary_Sentiment/2020_08/2020_08_06_07_Summary_Sentiment.pkl
+File not found!: /media/thalis/arquivos linux/TCC/COVID19_Tweets_Dataset_2020/Summary_Sentiment/2020_08/2020_08_09_07_Summary_Sentiment.pkl
+File not found!: /media/thalis/arquivos linux/TCC/COVID19_Tweets_Dataset_2020/Summary_Sentiment/2020_08/2020_08_14_07_Summary_Sentiment.pkl
