@@ -17,7 +17,7 @@ import tqdm
 import multiprocessing as mproc
 import config
 
-approx_methods = ['Page Hinkley','GreedyKS', 'Reservoir Sampling', 'IKS + RS']#, 'Lall + DDSketch']
+approx_methods = ['GreedyKS', 'Reservoir Sampling', 'IKS + RS', 'Page Hinkley']#, 'Lall + DDSketch']
 
 def ph_builder(ref_distrib, num_bins):
     return PageHinkley(min_instances=0)
